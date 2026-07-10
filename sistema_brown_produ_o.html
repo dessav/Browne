@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brownê - Sistema de Gestão</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel to transpile JSX in-browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind Custom Config to match Brownê colors -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            marrom: '#66280a',
+            dourado: '#dcae61',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#fcf9f6] text-stone-800 antialiased">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
+
+    // SVG Icons object
+    const Icons = {
+      Dashboard: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+        </svg>
+      ),
+      Products: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+      Stock: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      Finance: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      Clients: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      Orders: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+        </svg>
+      ),
+      Reports: () => (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+        </svg>
+      ),
+      Plus: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      ),
+      Trash: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      ),
+      Check: () => (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      )
+    };
+
+    const INITIAL_STOCK_ITEMS = [
+      { id: 'STK-01', name: 'Chocolate Nobre Meio Amargo', stock: 4500, minStock: 1500, unit: 'g', costPerUnit: 0.045 },
+      { id: 'STK-02', name: 'Manteiga com Sal', stock: 1800, minStock: 800, unit: 'g', costPerUnit: 0.035 },
+      { id: 'STK-03', name: 'Açúcar Refinado', stock: 4000, minStock: 1000, unit: 'g', costPerUnit: 0.006 },
+      { id: 'STK-04', name: 'Farinha de Trigo', stock: 3500, minStock: 1000, unit: 'g', costPerUnit: 0.005 },
+      { id: 'STK-05', name: 'Ovos', stock: 8, minStock: 12, unit: 'un', costPerUnit: 0.60 },
+      { id: 'STK-06', name: 'Embalagens Elegantes', stock: 110, minStock: 30, unit: 'un', costPerUnit: 0.45 },
+      { id: 'STK-07', name: 'Fitas Decorativas Cetim', stock: 80, minStock: 25, unit: 'un', costPerUnit: 0.20 },
+      { id: 'STK-08', name: 'Etiquetas Autocolantes Brownê', stock: 15, minStock: 30, unit: 'un', costPerUnit: 0.15 }
+    ];
+
+    const INITIAL_PRODUCTS = [
+      { id: 201, name: 'Brownie Tradicional Cacau', salePrice: 8.50, cost: 3.20, stock: 45, category: 'Individual' },
+      { id: 202, name: 'Brownie Recheado Doce de Leite', salePrice: 12.00, cost: 4.80, stock: 20, category: 'Recheados' },
+      { id: 203, name: 'Brownie Nutella Supreme', salePrice: 14.00, cost: 5.50, stock: 12, category: 'Recheados' },
+      { id: 204, name: 'Caixa Presente Premium (Kit c/ 4)', salePrice: 42.00, cost: 16.50, stock: 8, category: 'Kits / Presentes' }
+    ];
+
+    const INITIAL_CLIENTS = [
+      { id: 301, name: 'Mariana Silva', phone: '(11) 98765-4321', address: 'Av. Paulista, 1000 - Apto 51 - Bela Vista, SP', birthday: '05/12', lastPurchase: '2026-07-08', totalSpent: 245.50 },
+      { id: 302, name: 'Carlos Souza', phone: '(11) 99123-4567', address: 'Rua das Flores, 123 - Pinheiros, SP', birthday: '14/07', lastPurchase: '2026-07-07', totalSpent: 120.00 },
+      { id: 303, name: 'Beatriz Almeida', phone: '(11) 97777-8888', address: 'Alameda Lorena, 450 - Jardins, SP', birthday: '22/02', lastPurchase: '2026-07-08', totalSpent: 340.00 },
+      { id: 304, name: 'Julio Santos', phone: '(11) 96111-2222', address: 'Rua Pamplona, 900 - Jardim Paulista, SP', birthday: '09/08', lastPurchase: '2026-06-15', totalSpent: 42.00 }
+    ];
+
+    const INITIAL_ORDERS = [
+      {
+        id: 'PED-2001',
+        customerId: 301,
+        items: [{ productId: 201, quantity: 4 }],
+        paymentMethod: 'Pix',
+        status: 'Em produção',
+        deliveryDate: '2026-07-09',
+        total: 34.00,
+        createdAt: '2026-07-08T14:30:00Z'
+      },
+      {
+        id: 'PED-2002',
+        customerId: 303,
+        items: [{ productId: 203, quantity: 2 }, { productId: 202, quantity: 1 }],
+        paymentMethod: 'Cartão de Crédito',
+        status: 'Pronto',
+        deliveryDate: '2026-07-08',
+        total: 40.00,
+        createdAt: '2026-07-08T15:10:00Z'
+      },
+      {
+        id: 'PED-2003',
+        customerId: 302,
+        items: [{ productId: 204, quantity: 1 }],
+        paymentMethod: 'Dinheiro',
+        status: 'Recebido',
+        deliveryDate: '2026-07-10',
+        total: 42.00,
+        createdAt: '2026-07-08T16:00:00Z'
+      }
+    ];
+
+    const INITIAL_FINANCIAL_TRANSACTIONS = [
+      { id: 'TX-101', date: '2026-07-01T09:00:00Z', type: 'saida', category: 'Despesas fixas', description: 'Aluguel do espaço da cozinha', value: 1200.00 },
+      { id: 'TX-102', date: '2026-07-02T11:30:00Z', type: 'saida', category: 'Compras de ingredientes', description: 'Compra de Chocolate Nobre e Manteiga', value: 350.00 },
+      { id: 'TX-103', date: '2026-07-05T18:00:00Z', type: 'saida', category: 'Despesas fixas', description: 'Conta de Energia Elétrica', value: 280.00 },
+      { id: 'TX-104', date: '2026-07-06T14:00:00Z', type: 'entrada', category: 'Vendas', description: 'Venda - Mariana Silva', value: 85.50 },
+      { id: 'TX-105', date: '2026-07-07T16:30:00Z', type: 'entrada', category: 'Vendas', description: 'Venda - Carlos Souza', value: 120.00 },
+      { id: 'TX-106', date: '2026-07-08T10:15:00Z', type: 'entrada', category: 'Vendas', description: 'Venda - Beatriz Almeida', value: 180.00 },
+      { id: 'TX-107', date: '2026-07-08T13:40:00Z', type: 'entrada', category: 'Vendas', description: 'Venda - Julio Santos', value: 42.00 }
+    ];
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('dashboard');
+      
+      const [stockItems, setStockItems] = useState(() => {
+        const local = localStorage.getItem('browne_stock');
+        return local ? JSON.parse(local) : INITIAL_STOCK_ITEMS;
+      });
+
+      const [products, setProducts] = useState(() => {
+        const local = localStorage.getItem('browne_products');
+        return local ? JSON.parse(local) : INITIAL_PRODUCTS;
+      });
+
+      const [clients, setClients] = useState(() => {
+        const local = localStorage.getItem('browne_clients');
+        return local ? JSON.parse(local) : INITIAL_CLIENTS;
+      });
+
+      const [orders, setOrders] = useState(() => {
+        const local = localStorage.getItem('browne_orders');
+        return local ? JSON.parse(local) : INITIAL_ORDERS;
+      });
+
+      const [transactions, setTransactions] = useState(() => {
+        const local = localStorage.getItem('browne_transactions');
+        return local ? JSON.parse(local) : INITIAL_FINANCIAL_TRANSACTIONS;
+      });
+
+      // Saving to localStorage automatically
+      useEffect(() => {
+        localStorage.setItem('browne_stock', JSON.stringify(stockItems));
+      }, [stockItems]);
+
+      useEffect(() => {
+        localStorage.setItem('browne_products', JSON.stringify(products));
+      }, [products]);
+
+      useEffect(() => {
+        localStorage.setItem('browne_clients', JSON.stringify(clients));
+      }, [clients]);
+
+      useEffect(() => {
+        localStorage.setItem('browne_orders', JSON.stringify(orders));
+      }, [orders]);
+
+      useEffect(() => {
+        localStorage.setItem('browne_transactions', JSON.stringify(transactions));
+      }, [transactions]);
+
+      const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+      const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+      const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+      const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+      const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
+
+      const [newProduct, setNewProduct] = useState({ name: '', salePrice: '', cost: '', stock: '', category: 'Individual' });
+      const [newStockItem, setNewStockItem] = useState({ name: '', stock: '', minStock: '', unit: 'g', costPerUnit: '' });
+      const [newClient, setNewClient] = useState({ name: '', phone: '', address: '', birthday: '' });
+      const [newOrder, setNewOrder] = useState({ customerId: '', items: [{ productId: 201, quantity: 1 }], paymentMethod: 'Pix', deliveryDate: '2026-07-09' });
+      const [newTransaction, setNewTransaction] = useState({ type: 'saida', category: 'Despesas fixas', description: '', value: '' });
+
+      const [toast, setToast] = useState(null);
+      const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3500);
+      };
+
+      const metrics = useMemo(() => {
+        const todayStr = '2026-07-08'; // System current day
+        
+        const faturamentoDia = transactions
+          .filter(tx => tx.type === 'entrada' && tx.date.startsWith(todayStr))
+          .reduce((sum, tx) => sum + tx.value, 0);
+
+        const faturamentoMes = transactions
+          .filter(tx => tx.type === 'entrada' && tx.date.includes('2026-07'))
+          .reduce((sum, tx) => sum + tx.value, 0);
+
+        const totalEntradas = transactions.filter(tx => tx.type === 'entrada').reduce((sum, tx) => sum + tx.value, 0);
+        const totalSaidas = transactions.filter(tx => tx.type === 'saida').reduce((sum, tx) => sum + tx.value, 0);
+        const valorEmCaixa = totalEntradas - totalSaidas;
+
+        const totalRevenueSales = transactions.filter(tx => tx.type === 'entrada' && tx.category === 'Vendas').reduce((sum, tx) => sum + tx.value, 0);
+        const estimatedCostIncurred = transactions.filter(tx => tx.type === 'saida' && tx.category === 'Compras de ingredientes').reduce((sum, tx) => sum + tx.value, 0);
+        const fixedCosts = transactions.filter(tx => tx.type === 'saida' && tx.category === 'Despesas fixas').reduce((sum, tx) => sum + tx.value, 0);
+        
+        const lucroLiquidoReal = totalRevenueSales - estimatedCostIncurred - fixedCosts;
+        const pedidosEmAndamento = orders.filter(o => o.status !== 'Entregue').length;
+        const itensEstoqueBaixo = stockItems.filter(item => item.stock <= item.minStock).length;
+
+        const productSalesCount = {};
+        orders.forEach(order => {
+          order.items.forEach(item => {
+            productSalesCount[item.productId] = (productSalesCount[item.productId] || 0) + item.quantity;
+          });
+        });
+
+        const sortedBestSellers = Object.keys(productSalesCount)
+          .map(id => {
+            const prod = products.find(p => p.id === parseInt(id));
+            return {
+              name: prod ? prod.name : 'Outros',
+              quantity: productSalesCount[id]
+            };
+          })
+          .sort((a, b) => b.quantity - a.quantity)
+          .slice(0, 3);
+
+        return {
+          faturamentoDia,
+          faturamentoMes,
+          lucroLiquidoReal,
+          pedidosEmAndamento,
+          valorEmCaixa,
+          itensEstoqueBaixo,
+          sortedBestSellers,
+          totalEntradas,
+          totalSaidas,
+          fixedCosts,
+          estimatedCostIncurred
+        };
+      }, [transactions, orders, stockItems, products]);
+
+      // Handlers
+      const handleCreateProduct = (e) => {
+        e.preventDefault();
+        if (!newProduct.name || !newProduct.salePrice || !newProduct.cost) {
+          showToast('Por favor, preencha todos os campos.', 'error');
+          return;
+        }
+        const created = {
+          id: Date.now(),
+          name: newProduct.name,
+          salePrice: parseFloat(newProduct.salePrice),
+          cost: parseFloat(newProduct.cost),
+          stock: parseInt(newProduct.stock || 0),
+          category: newProduct.category
+        };
+        setProducts(prev => [...prev, created]);
+        setIsProductModalOpen(false);
+        setNewProduct({ name: '', salePrice: '', cost: '', stock: '', category: 'Individual' });
+        showToast('Sabor de brownie cadastrado com sucesso!');
+      };
+
+      const handleCreateStockItem = (e) => {
+        e.preventDefault();
+        if (!newStockItem.name || !newStockItem.stock || !newStockItem.costPerUnit) {
+          showToast('Por favor, defina os valores corretos.', 'error');
+          return;
+        }
+        const created = {
+          id: `STK-${Date.now().toString().slice(-2)}`,
+          name: newStockItem.name,
+          stock: parseFloat(newStockItem.stock),
+          minStock: parseFloat(newStockItem.minStock || 0),
+          unit: newStockItem.unit,
+          costPerUnit: parseFloat(newStockItem.costPerUnit)
+        };
+        setStockItems(prev => [...prev, created]);
+        setIsStockModalOpen(false);
+        setNewStockItem({ name: '', stock: '', minStock: '', unit: 'g', costPerUnit: '' });
+        showToast('Insumo cadastrado no almoxarifado!');
+      };
+
+      const handleCreateClient = (e) => {
+        e.preventDefault();
+        if (!newClient.name || !newClient.phone) {
+          showToast('Preencha o nome e o WhatsApp do cliente.', 'error');
+          return;
+        }
+        const created = {
+          id: Date.now(),
+          name: newClient.name,
+          phone: newClient.phone,
+          address: newClient.address || 'Não informado',
+          birthday: newClient.birthday || 'N/D',
+          lastPurchase: 'Sem compras',
+          totalSpent: 0
+        };
+        setClients(prev => [...prev, created]);
+        setIsClientModalOpen(false);
+        setNewClient({ name: '', phone: '', address: '', birthday: '' });
+        showToast('Cliente cadastrado com sucesso!');
+      };
+
+      const handleCreateTransaction = (e) => {
+        e.preventDefault();
+        if (!newTransaction.description || !newTransaction.value) {
+          showToast('Defina descrição e valor.', 'error');
+          return;
+        }
+        const val = parseFloat(newTransaction.value);
+        const created = {
+          id: `TX-${Date.now().toString().slice(-3)}`,
+          date: new Date().toISOString(),
+          type: 'saida',
+          category: newTransaction.category,
+          description: newTransaction.description,
+          value: val
+        };
+        setTransactions(prev => [created, ...prev]);
+        setIsFinanceModalOpen(false);
+        setNewTransaction({ type: 'saida', category: 'Despesas fixas', description: '', value: '' });
+        showToast('Saída financeira registrada!');
+      };
+
+      const handleCreateOrder = (e) => {
+        e.preventDefault();
+        if (!newOrder.customerId) {
+          showToast('Selecione um cliente cadastrado.', 'error');
+          return;
+        }
+
+        const calculatedTotal = newOrder.items.reduce((sum, item) => {
+          const prod = products.find(p => p.id === parseInt(item.productId));
+          return sum + (prod ? prod.salePrice * item.quantity : 0);
+        }, 0);
+
+        const created = {
+          id: `PED-${Date.now().toString().slice(-4)}`,
+          customerId: parseInt(newOrder.customerId),
+          items: [...newOrder.items],
+          paymentMethod: newOrder.paymentMethod,
+          status: 'Recebido',
+          deliveryDate: newOrder.deliveryDate,
+          total: calculatedTotal,
+          createdAt: new Date().toISOString()
+        };
+
+        setOrders(prev => [created, ...prev]);
+        setIsOrderModalOpen(false);
+        setNewOrder({ customerId: '', items: [{ productId: 201, quantity: 1 }], paymentMethod: 'Pix', deliveryDate: '2026-07-09' });
+        showToast('Novo pedido registrado!');
+      };
+
+      const handleUpdateOrderStatus = (orderId, nextStatus) => {
+        setOrders(prev => prev.map(order => {
+          if (order.id !== orderId) return order;
+
+          if (nextStatus === 'Em produção') {
+            showToast(`Pedido ${orderId} foi para a cozinha!`);
+          } else if (nextStatus === 'Pronto') {
+            showToast(`Pedido ${orderId} está pronto para entrega!`);
+          } else if (nextStatus === 'Entregue') {
+            const clientObj = clients.find(c => c.id === order.customerId);
+            const descriptionTxt = `Venda - ${clientObj ? clientObj.name : 'Cliente Registrado'}`;
+            
+            const newSaleTx = {
+              id: `TX-${Date.now().toString().slice(-3)}`,
+              date: new Date().toISOString(),
+              type: 'entrada',
+              category: 'Vendas',
+              description: descriptionTxt,
+              value: order.total
+            };
+            
+            setTransactions(t => [newSaleTx, ...t]);
+
+            setClients(cls => cls.map(c => {
+              if (c.id === order.customerId) {
+                return {
+                  ...c,
+                  totalSpent: c.totalSpent + order.total,
+                  lastPurchase: new Date().toISOString().split('T')[0]
+                };
+              }
+              return c;
+            }));
+
+            setProducts(prods => prods.map(p => {
+              const itemOrdered = order.items.find(i => i.productId === p.id);
+              if (itemOrdered) {
+                return { ...p, stock: Math.max(0, p.stock - itemOrdered.quantity) };
+              }
+              return p;
+            }));
+
+            showToast(`Pedido concluído e faturado!`);
+          }
+
+          return { ...order, status: nextStatus };
+        }));
+      };
+
+      const handleDeleteOrder = (orderId) => {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+        showToast('Pedido removido permanentemente.', 'error');
+      };
+
+      const clearAllData = () => {
+        if(confirm("Tem certeza que deseja apagar todos os dados e reiniciar o sistema?")) {
+          localStorage.clear();
+          window.location.reload();
+        }
+      };
+
+      return (
+        <div className="min-h-screen bg-[#fcf9f6] text-stone-800 font-sans flex flex-col selection:bg-[#66280a]/20">
+          {/* Toast Notification */}
+          {toast && (
+            <div className={`fixed top-4 right-4 z-50 p-4 rounded-xl shadow-2xl text-white flex items-center gap-3 transition-all duration-300 transform scale-100 ${toast.type === 'error' ? 'bg-rose-600' : 'bg-marrom border border-dourado/40'}`}>
+              <span className="font-bold text-dourado">✨</span>
+              <span className="font-medium text-stone-100">{toast.message}</span>
+            </div>
+          )}
+
+          {}
+          <header className="bg-marrom text-stone-100 shadow-xl sticky top-0 z-40 border-b border-dourado/25">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between px-6 py-3.5 gap-4">
+              <div className="flex items-center gap-4">
+                <img 
+                  src="image_57371c.jpg" 
+                  alt="Brownê Chocolateria Artesanal" 
+                  className="h-14 w-auto object-contain rounded-md"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.src = "https://placehold.co/150x60/66280a/dcae61?text=BROWNÊ";
+                  }}
+                />
+                <div className="hidden sm:block border-l border-dourado/35 pl-4">
+                  <h1 className="text-sm font-serif font-bold tracking-widest text-dourado uppercase">BROWNÊ</h1>
+                  <p className="text-[10px] text-stone-300 font-medium tracking-wider">SISTEMA INTEGRADO DE GESTÃO</p>
+                </div>
+              </div>
+              
+              {/* Menu Tab buttons */}
+              <nav className="flex flex-wrap justify-center gap-1 bg-black/20 p-1 rounded-xl border border-dourado/15">
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Dashboard />
+                  <span>📋 Dashboard</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'products' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Products />
+                  <span>🍫 Produtos</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('stock')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all relative ${activeTab === 'stock' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Stock />
+                  <span>📦 Estoque</span>
+                  {metrics.itensEstoqueBaixo > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold animate-bounce shadow">
+                      {metrics.itensEstoqueBaixo}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('finance')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'finance' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Finance />
+                  <span>💰 Financeiro</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('clients')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'clients' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Clients />
+                  <span>👥 Clientes</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all relative ${activeTab === 'orders' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Orders />
+                  <span>🛍️ Pedidos</span>
+                  {metrics.pedidosEmAndamento > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-dourado text-marrom text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-black shadow">
+                      {metrics.pedidosEmAndamento}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${activeTab === 'reports' ? 'bg-dourado text-marrom shadow-md font-bold' : 'text-stone-200 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Icons.Reports />
+                  <span>📊 Relatórios</span>
+                </button>
+              </nav>
+            </div>
+          </header>
+
+          {/* MAIN CONTAINER */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+            {}
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row items-stretch justify-between bg-marrom text-white rounded-2xl border border-dourado/35 shadow-2xl overflow-hidden">
+                  <div className="flex flex-col md:flex-row items-center gap-6 p-6 flex-1">
+                    <img 
+                      src="image_57371c.jpg" 
+                      alt="Logo Principal" 
+                      className="w-full max-w-[280px] md:max-w-[320px] h-auto object-contain rounded-xl border border-dourado/40 shadow-inner"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://placehold.co/400x200/66280a/dcae61?text=BROWNÊ";
+                      }}
+                    />
+                    <div className="text-center md:text-left space-y-2">
+                      <span className="text-[10px] tracking-widest text-dourado font-bold uppercase">CHOCOLATERIA ARTESANAL</span>
+                      <h2 className="text-3xl font-serif font-bold text-stone-100 tracking-tight">Painel Operacional</h2>
+                      <p className="text-stone-200 text-xs max-w-lg leading-relaxed">
+                        Gerencie a produção diária de brownies, custos de insumos e controle faturamento em tempo real. Os dados ficam salvos localmente de forma segura.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center p-6 bg-black/15 border-t md:border-t-0 md:border-l border-dourado/25">
+                    <button
+                      onClick={() => setIsOrderModalOpen(true)}
+                      className="w-full sm:w-auto bg-dourado hover:bg-[#cdaf55] text-marrom px-6 py-3.5 rounded-xl shadow-lg font-black text-xs transition-colors flex items-center justify-center gap-2 tracking-wider"
+                    >
+                      <Icons.Plus /> NOVO PEDIDO
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-stone-200/60 shadow-sm hover:shadow transition-all">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block">Faturamento do Dia</span>
+                    <p className="text-2xl font-bold font-mono text-stone-900 mt-2">R$ {metrics.faturamentoDia.toFixed(2)}</p>
+                    <div className="text-xs text-emerald-600 mt-1 font-bold">Hoje</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-stone-200/60 shadow-sm hover:shadow transition-all">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block">Faturamento do Mês</span>
+                    <p className="text-2xl font-bold font-mono text-marrom mt-2">R$ {metrics.faturamentoMes.toFixed(2)}</p>
+                    <div className="text-xs text-stone-500 mt-1">Este mês</div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-stone-200/60 shadow-sm hover:shadow transition-all">
+                    <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest block">Lucro Estimado</span>
+                    <p className="text-2xl font-bold font-mono text-emerald-600 mt-2">R$ {metrics.lucroLiquidoReal.toFixed(2)}</p>
+                    <div className="text-xs text-stone-500 mt-1">Descontando insumos</div>
+                  </div>
+
+                  <div className="bg-marrom p-5 rounded-2xl border border-dourado/30 shadow-lg">
+                    <span className="text-[10px] font-black text-dourado uppercase tracking-widest block">Valor em Caixa</span>
+                    <p className="text-2xl font-bold font-mono text-white mt-2">R$ {metrics.valorEmCaixa.toFixed(2)}</p>
+                    <div className="text-xs text-dourado/80 mt-1">Disponível em Caixa</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm lg:col-span-2 space-y-6">
+                    <div>
+                      <h3 className="font-bold font-serif text-stone-900 text-lg flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 bg-dourado rounded-full inline-block animate-pulse"></span>
+                        Pedidos Ativos ({metrics.pedidosEmAndamento})
+                      </h3>
+                      <p className="text-xs text-stone-400 font-sans">Acompanhe as fornadas atuais.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {orders.filter(o => o.status !== 'Entregue').map(order => {
+                        const client = clients.find(c => c.id === order.customerId);
+                        return (
+                          <div key={order.id} className="flex justify-between items-center p-3.5 bg-stone-50 rounded-xl border border-stone-100 hover:border-stone-200 transition-all">
+                            <div>
+                              <p className="font-bold text-xs text-stone-800">{client ? client.name : 'Cliente'}</p>
+                              <div className="flex gap-2 mt-1">
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-[#f5e6de] text-marrom uppercase border border-dourado/25">{order.status}</span>
+                                <span className="text-[9px] text-stone-400 font-mono">Para: {new Date(order.deliveryDate).toLocaleDateString('pt-BR')}</span>
+                              </div>
+                            </div>
+                            <span className="font-bold text-sm text-stone-900 font-mono">R$ {order.total.toFixed(2)}</span>
+                          </div>
+                        );
+                      })}
+                      {orders.filter(o => o.status !== 'Entregue').length === 0 && (
+                        <div className="text-center py-8 text-stone-400 text-xs">
+                          ☕ Todos os brownies entregues!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 lg:col-span-1">
+                    <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm space-y-4">
+                      <h3 className="font-bold font-serif text-marrom text-sm flex items-center gap-1.5">🏆 Campeões de Venda</h3>
+                      <div className="space-y-3">
+                        {metrics.sortedBestSellers.map((prod, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-stone-50 last:border-0">
+                            <span className="text-stone-600 font-medium">{idx+1}º - {prod.name}</span>
+                            <span className="bg-[#f5e6de] font-bold text-marrom px-2.5 py-0.5 rounded-full text-[10px] border border-dourado/25">{prod.quantity} un</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-[#fcf5f1] p-6 rounded-2xl border border-dourado/35 space-y-4">
+                      <h3 className="font-bold text-stone-900 text-sm flex items-center gap-1.5">⚠️ Insumos Baixos</h3>
+                      <div className="space-y-2">
+                        {stockItems.filter(item => item.stock <= item.minStock).map(item => (
+                          <div key={item.id} className="flex justify-between items-center text-xs">
+                            <span className="text-marrom font-medium">{item.name}</span>
+                            <span className="text-rose-700 font-bold font-mono">{item.stock} {item.unit} restante(s)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'products' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">Cadastro de Sabores</h2>
+                    <p className="text-stone-500 text-sm">Controle de margens, custos de preparo e estoque.</p>
+                  </div>
+                  <button onClick={() => setIsProductModalOpen(true)} className="bg-marrom hover:bg-[#521f07] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 border border-dourado/25">
+                    <Icons.Plus /> Novo Sabor
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {products.map(prod => {
+                    const profit = prod.salePrice - prod.cost;
+                    const profitPercent = prod.salePrice > 0 ? (profit / prod.salePrice) * 100 : 0;
+                    return (
+                      <div key={prod.id} className="bg-white p-5 rounded-2xl border border-stone-200/60 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
+                        <div>
+                          <span className="bg-[#f5e6de] text-marrom font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase border border-dourado/25">{prod.category}</span>
+                          <h3 className="font-bold text-stone-900 text-base mt-2 leading-snug">{prod.name}</h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs py-2 bg-stone-50 rounded-xl px-3 border border-stone-100">
+                          <div>
+                            <span className="text-[10px] text-stone-400 font-bold block">Preço</span>
+                            <span className="font-bold text-marrom font-mono">R$ {prod.salePrice.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-stone-400 font-bold block">Custo</span>
+                            <span className="font-semibold text-stone-600 font-mono">R$ {prod.cost.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-stone-400 font-bold block">Lucro</span>
+                            <span className="font-bold text-emerald-600 font-mono">R$ {profit.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-stone-400 font-bold block">Margem</span>
+                            <span className="font-bold text-stone-700 font-mono">{profitPercent.toFixed(0)}%</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+                          <span className="text-xs text-stone-500 font-mono">Pronta Entrega: <strong>{prod.stock} un</strong></span>
+                          <button onClick={() => { setProducts(prev => prev.filter(p => p.id !== prod.id)); showToast('Produto removido do cardápio.', 'error'); }} className="text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"><Icons.Trash /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'stock' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">Almoxarifado & Insumos</h2>
+                    <p className="text-stone-500 text-sm">Controle as embalagens, fitas, chocolates e matérias-primas essenciais.</p>
+                  </div>
+                  <button onClick={() => setIsStockModalOpen(true)} className="bg-marrom hover:bg-[#521f07] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 border border-dourado/25">
+                    <Icons.Plus /> Novo Ingrediente
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {stockItems.map(item => {
+                    const isLow = item.stock <= item.minStock;
+                    return (
+                      <div key={item.id} className={`bg-white p-5 rounded-2xl border shadow-sm flex flex-col justify-between space-y-4 hover:shadow transition-all ${isLow ? 'border-amber-400 bg-amber-50/20' : 'border-stone-200/60'}`}>
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <span className="text-[10px] text-stone-400 font-bold font-mono">{item.id}</span>
+                            {isLow && <span className="bg-rose-100 text-rose-800 font-bold text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider">Acabando!</span>}
+                          </div>
+                          <h3 className="font-bold text-stone-900 text-sm mt-1.5">{item.name}</h3>
+                        </div>
+
+                        <div className="space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-stone-500">Saldo Atual:</span>
+                            <span className="font-bold text-stone-950 font-mono">{item.stock} {item.unit}</span>
+                          </div>
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-stone-400">Saldo Mínimo:</span>
+                            <span className="text-stone-600 font-mono">{item.minStock} {item.unit}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 pt-2 border-t border-stone-100">
+                          <button
+                            onClick={() => {
+                              const addAmount = item.unit === 'g' ? 1000 : 50;
+                              setStockItems(prev => prev.map(i => i.id === item.id ? { ...i, stock: i.stock + addAmount } : i));
+                              showToast(`Adicionado + ${addAmount} ${item.unit} de ${item.name}!`);
+                            }}
+                            className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold py-2 rounded-xl transition-colors border border-stone-200"
+                          >
+                            Reabastecer
+                          </button>
+                          <button onClick={() => { setStockItems(prev => prev.filter(i => i.id !== item.id)); showToast('Removido do almoxarifado.', 'error'); }} className="text-rose-500 hover:bg-rose-50 p-2 rounded-xl transition-colors"><Icons.Trash /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'finance' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">Fluxo de Caixa & Caixa Integrado</h2>
+                    <p className="text-stone-500 text-sm">Histórico consolidado de receitas e custos fixos.</p>
+                  </div>
+                  <button onClick={() => setIsFinanceModalOpen(true)} className="bg-marrom hover:bg-[#521f07] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 border border-dourado/25">
+                    <Icons.Plus /> Lançar Despesa
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <span className="text-[10px] text-stone-400 font-black block uppercase tracking-wider">Entradas</span>
+                    <span className="text-lg font-bold font-mono text-emerald-600">R$ {metrics.totalEntradas.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <span className="text-[10px] text-stone-400 font-black block uppercase tracking-wider">Fixas</span>
+                    <span className="text-lg font-bold font-mono text-rose-600">R$ {metrics.fixedCosts.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <span className="text-[10px] text-stone-400 font-black block uppercase tracking-wider">Ingredientes</span>
+                    <span className="text-lg font-bold font-mono text-amber-950">R$ {metrics.estimatedCostIncurred.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm text-center">
+                    <span className="text-[10px] text-stone-400 font-black block uppercase tracking-wider">Saídas</span>
+                    <span className="text-lg font-bold font-mono text-rose-700">R$ {metrics.totalSaidas.toFixed(2)}</span>
+                  </div>
+                  <div className="bg-[#f5e6de] p-4 rounded-xl border border-dourado/40 shadow-sm text-center">
+                    <span className="text-[10px] text-marrom font-black block uppercase tracking-wider">Lucro Real</span>
+                    <span className="text-lg font-bold font-mono text-emerald-800">R$ {metrics.lucroLiquidoReal.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-50 text-stone-400 text-[10px] font-bold uppercase tracking-wider border-b border-stone-200">
+                          <th className="py-3 px-6">Lançamento</th>
+                          <th className="py-3 px-6">Data</th>
+                          <th className="py-3 px-6">Categoria</th>
+                          <th className="py-3 px-6">Descrição</th>
+                          <th className="py-3 px-6 text-right">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-xs">
+                        {transactions.map(tx => (
+                          <tr key={tx.id} className="hover:bg-stone-50/40 transition-colors">
+                            <td className="py-3.5 px-6 font-mono font-bold text-stone-400">{tx.id}</td>
+                            <td className="py-3.5 px-6 text-stone-500 font-mono">{new Date(tx.date).toLocaleDateString('pt-BR')}</td>
+                            <td className="py-3.5 px-6">
+                              <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border ${tx.category === 'Vendas' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>{tx.category}</span>
+                            </td>
+                            <td className="py-3.5 px-6 font-medium text-stone-800">{tx.description}</td>
+                            <td className={`py-3.5 px-6 text-right font-mono font-bold ${tx.type === 'entrada' ? 'text-emerald-600' : 'text-rose-600'}`}>{tx.type === 'entrada' ? '+' : '-'} R$ {tx.value.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'clients' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">Carteira de Clientes</h2>
+                    <p className="text-stone-500 text-sm">Histórico de consumo e aniversariantes da chocolateria.</p>
+                  </div>
+                  <button onClick={() => setIsClientModalOpen(true)} className="bg-marrom hover:bg-[#521f07] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 border border-dourado/25">
+                    <Icons.Plus /> Novo Perfil
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-stone-200/60 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-stone-50 text-stone-400 text-xs font-bold uppercase tracking-wider border-b border-stone-200">
+                          <th className="py-4 px-6">Cliente</th>
+                          <th className="py-4 px-6">WhatsApp</th>
+                          <th className="py-4 px-6">Endereço Principal</th>
+                          <th className="py-4 px-6 text-center">Nascimento</th>
+                          <th className="py-4 px-6 text-right">Valor Acumulado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100 text-xs">
+                        {clients.map(client => (
+                          <tr key={client.id} className="hover:bg-stone-50/40 transition-colors">
+                            <td className="py-4 px-6 font-bold text-stone-900">{client.name}</td>
+                            <td className="py-4 px-6 text-stone-600 font-mono">{client.phone}</td>
+                            <td className="py-4 px-6 text-stone-500 max-w-xs truncate" title={client.address}>{client.address}</td>
+                            <td className="py-4 px-6 text-center font-bold text-marrom font-mono">{client.birthday}</td>
+                            <td className="py-4 px-6 text-right font-mono font-bold text-emerald-600">R$ {client.totalSpent.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'orders' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">Quadro de Fornada & Pedidos</h2>
+                    <p className="text-stone-500 text-sm">Controle as etapas desde o recebimento até a saída do motoboy.</p>
+                  </div>
+                  <button onClick={() => setIsOrderModalOpen(true)} className="bg-marrom hover:bg-[#521f07] text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5 border border-dourado/25">
+                    <Icons.Plus /> Registrar Pedido
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  {['Recebido', 'Em produção', 'Pronto', 'Entregue'].map(stage => {
+                    const stageOrders = orders.filter(o => o.status === stage);
+                    return (
+                      <div key={stage} className="bg-stone-100 p-4 rounded-2xl flex flex-col min-h-[450px] border border-stone-200/50">
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="font-bold text-marrom text-xs uppercase tracking-wider font-serif">{stage}</h3>
+                          <span className="bg-white text-stone-600 px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-sm font-mono">{stageOrders.length}</span>
+                        </div>
+
+                        <div className="space-y-3 flex-1 overflow-y-auto">
+                          {stageOrders.map(order => {
+                            const client = clients.find(c => c.id === order.customerId);
+                            return (
+                              <div key={order.id} className="bg-white p-4 rounded-xl border border-stone-200/70 shadow-sm space-y-3 text-xs hover:shadow transition-all">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-bold text-stone-900">{client ? client.name : 'Cliente'}</h4>
+                                    <span className="text-[9px] text-stone-400 font-mono block">{order.id}</span>
+                                  </div>
+                                </div>
+
+                                <div className="border-t border-dashed border-stone-150 pt-2 space-y-1 text-[11px] text-stone-600">
+                                  {order.items.map((item, idx) => {
+                                    const prod = products.find(p => p.id === item.productId);
+                                    return (
+                                      <div key={idx} className="flex justify-between">
+                                        <span>{prod ? prod.name : 'Brownie'}</span>
+                                        <span className="font-bold font-mono">x{item.quantity}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+                                  <span className="text-[10px] text-stone-700 font-mono">Para: {new Date(order.deliveryDate).toLocaleDateString('pt-BR')}</span>
+                                  <span className="font-bold text-sm text-stone-950 font-mono">R$ {order.total.toFixed(2)}</span>
+                                </div>
+
+                                <div className="flex justify-end gap-1.5 pt-1.5 border-t border-stone-50">
+                                  <button onClick={() => handleDeleteOrder(order.id)} className="text-rose-500 hover:bg-rose-50 p-1 rounded transition-colors"><Icons.Trash /></button>
+                                  {order.status === 'Recebido' && <button onClick={() => handleUpdateOrderStatus(order.id, 'Em produção')} className="bg-marrom text-white font-bold px-2 py-1 rounded text-[10px] hover:bg-[#521f07] flex items-center gap-1">Produzir <Icons.Check /></button>}
+                                  {order.status === 'Em produção' && <button onClick={() => handleUpdateOrderStatus(order.id, 'Pronto')} className="bg-amber-600 text-white font-bold px-2 py-1 rounded text-[10px] hover:bg-amber-700 flex items-center gap-1">Pronto <Icons.Check /></button>}
+                                  {order.status === 'Pronto' && <button onClick={() => handleUpdateOrderStatus(order.id, 'Entregue')} className="bg-emerald-600 text-white font-bold px-2 py-1 rounded text-[10px] hover:bg-emerald-700 flex items-center gap-1">Concluir <Icons.Check /></button>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {}
+            {activeTab === 'reports' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm">
+                  <h2 className="text-2xl font-serif font-bold text-stone-900">Relatórios & Rendibilidade</h2>
+                  <p className="text-stone-500 text-sm">Acompanhamento consolidado de vendas diárias e mensais.</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm space-y-4">
+                    <h3 className="font-bold text-stone-900 text-sm font-serif">📈 Volume de Vendas</h3>
+                    <div className="divide-y divide-stone-100 text-xs">
+                      <div className="py-3 flex justify-between">
+                        <span className="text-stone-500">Hoje</span>
+                        <span className="font-bold text-stone-900 font-mono">R$ {metrics.faturamentoDia.toFixed(2)}</span>
+                      </div>
+                      <div className="py-3 flex justify-between">
+                        <span className="text-stone-500">Mensal (Julho)</span>
+                        <span className="font-bold text-emerald-600 font-mono">R$ {metrics.faturamentoMes.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm space-y-4">
+                    <h3 className="font-bold text-stone-900 text-sm font-serif">🍫 Margem de Lucro por Unidade</h3>
+                    <div className="space-y-3.5 text-xs">
+                      {products.map(prod => {
+                        const profit = prod.salePrice - prod.cost;
+                        return (
+                          <div key={prod.id} className="flex justify-between items-center py-0.5 border-b border-stone-50 last:border-0">
+                            <span className="text-stone-600 font-medium">{prod.name}</span>
+                            <span className="font-mono text-emerald-600 font-bold">R$ {profit.toFixed(2)} /un</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-stone-200/60 shadow-sm space-y-4 lg:col-span-2">
+                    <h3 className="font-bold text-stone-900 text-sm font-serif">🏆 Maiores Compradores</h3>
+                    <div className="space-y-3 text-xs">
+                      {clients.slice().sort((a,b) => b.totalSpent - a.totalSpent).map((client, idx) => (
+                        <div key={client.id} className="flex justify-between items-center p-3 bg-stone-50 rounded-xl border border-stone-100 hover:border-stone-200 transition-all">
+                          <span className="font-semibold text-stone-800">{idx+1}º - {client.name}</span>
+                          <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-150">R$ {client.totalSpent.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-8 text-center">
+                  <button onClick={clearAllData} className="bg-rose-50 text-rose-700 text-xs px-4 py-2 rounded-xl hover:bg-rose-100 transition-all font-bold">
+                    ⚠️ Reiniciar Banco de Dados Local
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </main>
+
+          {}
+          {/* MODAL 1: PRODUTO */}
+          {isProductModalOpen && (
+            <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-stone-200">
+                <div className="bg-marrom text-dourado p-5 flex justify-between items-center">
+                  <h3 className="font-bold text-xs uppercase tracking-widest font-serif">Novo Sabor de Brownie</h3>
+                  <button onClick={() => setIsProductModalOpen(false)} className="text-dourado/80 hover:text-white font-bold">✕</button>
+                </div>
+                <form onSubmit={handleCreateProduct} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Nome do Sabor</label>
+                    <input type="text" required placeholder="Ex: Brownie de Pistache" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-marrom" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Preço de Venda</label>
+                      <input type="number" step="0.01" required value={newProduct.salePrice} onChange={(e) => setNewProduct({...newProduct, salePrice: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Custo Insumos</label>
+                      <input type="number" step="0.01" required value={newProduct.cost} onChange={(e) => setNewProduct({...newProduct, cost: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Categoria</label>
+                      <select value={newProduct.category} onChange={(e) => setNewProduct({...newProduct, category: e.target.value})} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                        <option value="Individual">Individual</option>
+                        <option value="Recheados">Recheados</option>
+                        <option value="Kits / Presentes">Kits</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Estoque Inicial</label>
+                      <input type="number" value={newProduct.stock} onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2 border-t border-stone-100">
+                    <button type="button" onClick={() => setIsProductModalOpen(false)} className="bg-stone-100 text-stone-600 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                    <button type="submit" className="bg-marrom text-dourado px-5 py-2 rounded-xl text-xs font-bold">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: ESTOQUE */}
+          {isStockModalOpen && (
+            <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-stone-200">
+                <div className="bg-marrom text-dourado p-5 flex justify-between items-center">
+                  <h3 className="font-bold text-xs uppercase tracking-widest font-serif">Novo Insumo</h3>
+                  <button onClick={() => setIsStockModalOpen(false)} className="text-dourado/80 hover:text-white font-bold">✕</button>
+                </div>
+                <form onSubmit={handleCreateStockItem} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Ingrediente</label>
+                    <input type="text" required placeholder="Ex: Chocolate 70%" value={newStockItem.name} onChange={(e) => setNewStockItem({...newStockItem, name: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs focus:outline-none" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Estoque Inicial</label>
+                      <input type="number" required value={newStockItem.stock} onChange={(e) => setNewStockItem({...newStockItem, stock: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Unidade</label>
+                      <select value={newStockItem.unit} onChange={(e) => setNewStockItem({...newStockItem, unit: e.target.value})} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                        <option value="g">Gramas (g)</option>
+                        <option value="un">Unidade (un)</option>
+                        <option value="ml">Mililitro (ml)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Mínimo Alerta</label>
+                      <input type="number" value={newStockItem.minStock} onChange={(e) => setNewStockItem({...newStockItem, minStock: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Custo por Unit/Grama</label>
+                      <input type="number" step="0.0001" required value={newStockItem.costPerUnit} onChange={(e) => setNewStockItem({...newStockItem, costPerUnit: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2 border-t border-stone-100">
+                    <button type="button" onClick={() => setIsStockModalOpen(false)} className="bg-stone-100 text-stone-600 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                    <button type="submit" className="bg-marrom text-dourado px-5 py-2 rounded-xl text-xs font-bold">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 3: CLIENTE */}
+          {isClientModalOpen && (
+            <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-stone-200">
+                <div className="bg-marrom text-dourado p-5 flex justify-between items-center">
+                  <h3 className="font-bold text-xs uppercase tracking-widest font-serif">Cadastrar Cliente</h3>
+                  <button onClick={() => setIsClientModalOpen(false)} className="text-dourado/80 hover:text-white font-bold">✕</button>
+                </div>
+                <form onSubmit={handleCreateClient} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Nome Completo</label>
+                    <input type="text" required placeholder="Ex: Lucas Silva" value={newClient.name} onChange={(e) => setNewClient({...newClient, name: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">WhatsApp</label>
+                      <input type="text" required placeholder="(11) 99999-8888" value={newClient.phone} onChange={(e) => setNewClient({...newClient, phone: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Aniversário (DD/MM)</label>
+                      <input type="text" placeholder="Ex: 22/10" value={newClient.birthday} onChange={(e) => setNewClient({...newClient, birthday: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Endereço Completo</label>
+                    <input type="text" placeholder="Ex: Rua das Amoras, 120" value={newClient.address} onChange={(e) => setNewClient({...newClient, address: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2 border-t border-stone-100">
+                    <button type="button" onClick={() => setIsClientModalOpen(false)} className="bg-stone-100 text-stone-600 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                    <button type="submit" className="bg-marrom text-dourado px-5 py-2 rounded-xl text-xs font-bold">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 4: REGISTRAR PEDIDO */}
+          {isOrderModalOpen && (
+            <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-stone-200">
+                <div className="bg-marrom text-dourado p-5 flex justify-between items-center">
+                  <h3 className="font-bold text-xs uppercase tracking-widest font-serif">Registrar Pedido</h3>
+                  <button onClick={() => setIsOrderModalOpen(false)} className="text-dourado/80 hover:text-white font-bold">✕</button>
+                </div>
+                <form onSubmit={handleCreateOrder} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Cliente</label>
+                    <select required value={newOrder.customerId} onChange={(e) => setNewOrder({...newOrder, customerId: e.target.value})} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                      <option value="">-- Selecionar Cliente --</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Produto</label>
+                      <select onChange={(e) => {
+                        const pid = parseInt(e.target.value);
+                        setNewOrder(prev => {
+                          const items = [...prev.items];
+                          items[0].productId = pid;
+                          return { ...prev, items };
+                        });
+                      }} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                        {products.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Quantidade</label>
+                      <input type="number" min="1" required value={newOrder.items[0].quantity} onChange={(e) => {
+                        const qty = parseInt(e.target.value) || 1;
+                        setNewOrder(prev => {
+                          const items = [...prev.items];
+                          items[0].quantity = qty;
+                          return { ...prev, items };
+                        });
+                      }} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Pagamento</label>
+                      <select value={newOrder.paymentMethod} onChange={(e) => setNewOrder({...newOrder, paymentMethod: e.target.value})} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                        <option value="Pix">Pix</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Data de Entrega</label>
+                      <input type="date" required value={newOrder.deliveryDate} onChange={(e) => setNewOrder({...newOrder, deliveryDate: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                    </div>
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2 border-t border-stone-100">
+                    <button type="button" onClick={() => setIsOrderModalOpen(false)} className="bg-stone-100 text-stone-600 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                    <button type="submit" className="bg-marrom text-dourado px-5 py-2 rounded-xl text-xs font-bold">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 5: DESPESA */}
+          {isFinanceModalOpen && (
+            <div className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-stone-200">
+                <div className="bg-marrom text-dourado p-5 flex justify-between items-center">
+                  <h3 className="font-bold text-xs uppercase tracking-widest font-serif">Lançar Saída Financeira</h3>
+                  <button onClick={() => setIsFinanceModalOpen(false)} className="text-dourado/80 hover:text-white font-bold">✕</button>
+                </div>
+                <form onSubmit={handleCreateTransaction} className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Categoria</label>
+                    <select value={newTransaction.category} onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})} className="w-full border border-stone-300 rounded-xl px-2 py-2 text-xs">
+                      <option value="Despesas fixas">Despesa Fixa (Luz, Gás, Aluguel)</option>
+                      <option value="Compras de ingredientes">Compra de Ingredientes</option>
+                      <option value="Outros">Outras Despesas</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Descrição</label>
+                    <input type="text" required placeholder="Ex: Conta de gás" value={newTransaction.description} onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Valor Gasto</label>
+                    <input type="number" step="0.01" required value={newTransaction.value} onChange={(e) => setNewTransaction({...newTransaction, value: e.target.value})} className="w-full border border-stone-300 rounded-xl px-3 py-2 text-xs" />
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2 border-t border-stone-100">
+                    <button type="button" onClick={() => setIsFinanceModalOpen(false)} className="bg-stone-100 text-stone-600 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                    <button type="submit" className="bg-marrom text-dourado px-5 py-2 rounded-xl text-xs font-bold">Salvar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer className="bg-stone-900 text-stone-400 py-6 border-t border-dourado/25 text-center text-[10px] mt-auto">
+            <p className="font-serif tracking-widest text-dourado uppercase text-xs mb-1">BROWNÊ</p>
+            <p>Gestão de Negócios e Fluxos de Atendimento da Confeitaria © 2026.</p>
+          </footer>
+        </div>
+      );
+    }
+
+    // Mount React App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
